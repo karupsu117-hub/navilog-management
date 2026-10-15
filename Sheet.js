@@ -227,6 +227,7 @@ function writeMonthlySheet(
       if (rowData.isBlank) {
         clearManualValuesForBlankRow(sheet,rowNumber);
         clearInvoiceUpdateButton(sheet,rowNumber);
+        sheet.getRange(rowNumber,24).clearContent().clearFormat();
         return;
       }
       // A～N
@@ -238,7 +239,7 @@ function writeMonthlySheet(
       sheet.getRange(rowNumber,25,1,2).setValues([[rowData.caseId, rowData.eventIds]]);
       // W 請求書更新
       // 一時的↓
-      setInvoiceUpdateButton(sheet, rowNumber);
+      setInvoiceUpdateButton(sheet,rowNumber);
       // X STATUS 
       // 一時的↓
       const status = getInvoiceStatusFromRow(sheet,rowNumber);
@@ -305,8 +306,8 @@ function writeMonthlySheet(
     const rowNumber = writeStartRow + index;
     if (rowData.isBlank) {
       clearManualValuesForBlankRow(sheet,rowNumber);
-      // 一時的↓
       clearInvoiceUpdateButton(sheet,rowNumber);
+      sheet.getRange(rowNumber,24).clearContent().clearFormat();
       return;
     }
     // A～N
@@ -316,8 +317,7 @@ function writeMonthlySheet(
     // sheet.getRange(rowNumber,25,1,2).setValues([[rowData.caseId, rowData.eventIds]]);
     // W 請求書更新
     // 一時的↓
-    setInvoiceUpdateButton(sheet, rowNumber);
-
+    setInvoiceUpdateButton(sheet,rowNumber);
     // X STATUS 
     const status = getInvoiceStatusFromRow(sheet,rowNumber);
     // 一時的↓
