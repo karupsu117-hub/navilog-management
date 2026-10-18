@@ -9,7 +9,7 @@ function writeMonthlySheet(
   timeZone
 ) {
   // 一時的↓
-  // assignCaseIds(sheet, runDataList, START_ROW);
+  assignCaseIds(sheet, runDataList, START_ROW);
   const targetDateSet = new Set(
     runDataList.map(function(data) {
       return normalizeSheetMonthDay(data.dateStr_load);
@@ -227,6 +227,7 @@ function writeMonthlySheet(
       if (rowData.isBlank) {
         clearManualValuesForBlankRow(sheet,rowNumber);
         clearInvoiceUpdateButton(sheet,rowNumber);
+        sheet.getRange(rowNumber,24).clearContent().clearFormat();
         return;
       }
       // A～N
@@ -235,14 +236,14 @@ function writeMonthlySheet(
       sheet.getRange(rowNumber,17).setValue(rowData.noteValue);
       // Y 案件ID / Z イベントID
       // 一時的↓
-      // sheet.getRange(rowNumber,25,1,2).setValues([[rowData.caseId, rowData.eventIds]]);
+      sheet.getRange(rowNumber,25,1,2).setValues([[rowData.caseId, rowData.eventIds]]);
       // W 請求書更新
       // 一時的↓
-      // setInvoiceUpdateButton(sheet, rowNumber);
+      setInvoiceUpdateButton(sheet,rowNumber);
       // X STATUS 
       // 一時的↓
       const status = getInvoiceStatusFromRow(sheet,rowNumber);
-      // setInvoiceStatus(sheet,rowNumber,status);
+      setInvoiceStatus(sheet,rowNumber,status);
 
       // P 請求確認
       // 空欄の場合だけ「未確認」
@@ -305,8 +306,8 @@ function writeMonthlySheet(
     const rowNumber = writeStartRow + index;
     if (rowData.isBlank) {
       clearManualValuesForBlankRow(sheet,rowNumber);
-      // 一時的↓
-      // clearInvoiceUpdateButton(sheet,rowNumber);
+      clearInvoiceUpdateButton(sheet,rowNumber);
+      sheet.getRange(rowNumber,24).clearContent().clearFormat();
       return;
     }
     // A～N
@@ -316,12 +317,11 @@ function writeMonthlySheet(
     // sheet.getRange(rowNumber,25,1,2).setValues([[rowData.caseId, rowData.eventIds]]);
     // W 請求書更新
     // 一時的↓
-    // setInvoiceUpdateButton(sheet, rowNumber);
-
+    setInvoiceUpdateButton(sheet,rowNumber);
     // X STATUS 
     const status = getInvoiceStatusFromRow(sheet,rowNumber);
     // 一時的↓
-    // setInvoiceStatus(sheet,rowNumber,status);
+    setInvoiceStatus(sheet,rowNumber,status);
 
     // P 請求確認
     // 空欄の場合だけ「未確認」
