@@ -142,9 +142,17 @@ const INVOICE_TEMPLATE_ID = "1Z_NJ4HZOc9tdr89osUK6VpCkqFuQFBbbelSO4FUj8Fw";
 
 function getOrCreateInvoiceFile(clientName,yearMonth,folderName) {
   const parentFolder = DriveApp.getFolderById(INVOICE_FOLDER_ID);
+
+  // 請求書_シートフォルダを取得
+  const sheetFolders = parentFolder.getFoldersByName("請求書_シート");
+  if (!sheetFolders.hasNext()) {
+    throw new Error("請求書_シートフォルダが見つかりません");
+  }
+
+  const sheetFolder = sheetFolders.next();
   const targetFolderName = folderName || clientName;
 
-  const folders = parentFolder.getFoldersByName(targetFolderName);
+  const folders = sheetFolder.getFoldersByName(targetFolderName);
   if (!folders.hasNext()) {
     throw new Error("保存先フォルダが見つかりません: "+targetFolderName);
   }
