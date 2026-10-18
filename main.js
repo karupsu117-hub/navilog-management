@@ -58,7 +58,7 @@ function exportCalendar() {
     if (!drNo && !isCancel && !isCharter) return;// 車番がなければスキップ
 
     // 「卸しのみ」の予定は1周目はパス
-    if (isUnloadOnlyEvent(title, drNo)){
+    if (isUnloadOnlyEvent(title, drNo) || isCharterUnloadOnlyEvent(title)){
       return;
     } 
 
@@ -163,7 +163,8 @@ function exportCalendar() {
       return;
     }
     // 卸しイベントだけ
-    if (!isUnloadOnlyEvent(title, drNo)) {
+    const charterUnloadOnly = isCharterUnloadOnlyEvent(title);
+    if (!isUnloadOnlyEvent(title, drNo) && !charterUnloadOnly) {
       return;
     }
     const description = event.getDescription() ? event.getDescription().trim() : "";
@@ -179,8 +180,14 @@ function exportCalendar() {
       "M/d"
     );
     const key = searchDrNo + "_" + unloadDate;
-    const candidates = runMap.get(key) || [];
+    let candidates = runMap.get(key) || [];
+
+    if (charterUnloadOnly) {
+      candidates = candidates.filter(data => data.isCharter);
+    }
+    
     if (candidates.length === 0) {
+      Logger.log("【傭車卸】結合候補なし: " + title);
       return;
     }
 
@@ -304,6 +311,10 @@ function exportCalendar() {
       timeZone
     );
   });
+  Logger.log("【傭車】全取得件数: " + runDataList.length);
+  Logger.log("【傭車】転記対象件数: " + writeDataList.length);
+  Logger.log("【傭車】傭車判定件数: " + writeDataList.filter(d => d.isCharter).length);
+  Logger.log("【傭車】対象期間: " + updateStart + " ～ " + updateEnd);
   syncCharterSheet(writeDataList, updateStart, updateEnd, timeZone);
 }
 

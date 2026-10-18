@@ -88,3 +88,18 @@ function toCharterNumber(value) {
   const match = text.match(/-?\d+(?:\.\d+)?/);
   return match ? Number(match[0]) : 0;
 }
+
+function isCharterUnloadOnlyEvent(title) {
+  const normalizedTitle = normalizeCalendarText(title);
+  if (!isCharterEvent(title) || !normalizedTitle.includes("→")) return false;
+
+  const left = normalizedTitle.split("→")[0]
+    .replace(/^傭車\s*/u, "")
+    .replace(/【[^】]*】/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/（[^）]*）/g, "")
+    .replace(/^\s*[2-9]\s*[A-Za-zぁ-んァ-ヶ一-龠]*\s*/iu, "")
+    .trim();
+
+  return left === "";
+}
