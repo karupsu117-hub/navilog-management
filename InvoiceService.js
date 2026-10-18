@@ -164,7 +164,12 @@ function getOrCreateInvoiceFile(clientName,yearMonth,folderName) {
 
   // 既存の請求書は変更せず再利用
   if (existingFiles.hasNext()) {
-    return existingFiles.next();
+    const invoiceFile = existingFiles.next();
+    const invoiceSS = SpreadsheetApp.openById(invoiceFile.getId());
+  
+    setInvoiceClientName(invoiceSS,clientName);
+  
+    return invoiceFile;
   }
 
   // 初回のみ原本をコピー
@@ -321,11 +326,17 @@ function getInvoiceFolderName(clientName) {
   
 
   function setInvoiceClientName(invoiceSS,clientName) {
-    const sheet = invoiceSS.getSheetByName("1");
-    if (!sheet) throw new Error("請求書のシート1がありません。");
+    const sheet1 = invoiceSS.getSheetByName("1");
+    const sheet2 = invoiceSS.getSheetByName("2");
+  
+    if (!sheet1 || !sheet2) {
+      throw new Error("請求書のシート1または2がありません。");
+    }
   
     const formalName = getFormalCompanyName(clientName);
-    sheet.getRange("B3").setValue(formalName+" 御中");
+  
+    sheet1.getRange("B3").setValue(formalName+" 御中");
+    sheet2.getRange("B3").setValue(formalName+" 御中");
   }
   
 
