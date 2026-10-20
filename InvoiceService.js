@@ -3,9 +3,10 @@ function onOpen() {
     SpreadsheetApp.getUi()
       .createMenu("請求書管理")
       .addItem("選択行の請求書を更新","updateSelectedInvoice")
+      .addItem("個別PDF作成","createSelectedInvoicePdf")
+      .addItem("一括PDF作成","createAllInvoicePdfs")
       .addToUi();
   }
-  
 
   function updateSelectedInvoice() {
     const ui = SpreadsheetApp.getUi();
@@ -217,7 +218,22 @@ function getInvoiceTransferData(sheet,rowNumber) {
     };
   }
 
-function getInvoiceFolderName(clientName) {
+  function getInvoiceFolderName(clientName) {
+    const normalize = value => String(value||"")
+      .trim().replace(/\s+/g," ");
+  
+    const client = normalize(clientName);
+  
+    // 個別請求（定期）はCONFIGで管理
+    const fixed = CONFIG.FIXED_BILLING_COMPANIES.find(
+      name=>normalize(name)===client
+    );
+  
+    if (fixed) {
+      return String(fixed).trim();
+    }
+  
+    // 通常の個別請求は個別請求管理から取得
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.BILLING_SHEET);
   
@@ -226,14 +242,11 @@ function getInvoiceFolderName(clientName) {
     }
   
     const lastRow = sheet.getLastRow();
-    if (lastRow < 2) {
+    if (lastRow<2) {
       throw new Error("個別請求管理に取引先が登録されていません。");
     }
   
     const names = sheet.getRange(2,1,lastRow-1,1).getValues().flat();
-    const normalize = value => String(value||"").trim().replace(/\s+/g," ");
-    const client = normalize(clientName);
-  
     const match = names.find(name=>normalize(name)===client);
   
     if (!match) {
@@ -357,6 +370,7 @@ function createNextInvoiceSheet(invoiceSS) {
   
     const newSheet = baseSheet.copyTo(invoiceSS);
     newSheet.setName(String(nextNumber));
+    newSheet.getRange("B53").setValue("-"+nextNumber+"-");
   
     // 明細部分だけ初期化（書式は保持）
     newSheet.getRange("B13:H50").clearContent();
