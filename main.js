@@ -130,9 +130,12 @@ function exportCalendar() {
       charterSignboard: charterSignboard || "",
       sheetName: sheetName,
       calendarEventId: calendarEventId ,
-      assistantFare: assistantFare,
-      assistantFareSpecified: assistantFareSpecified,
-      hasAssistant: /[（(][^）)]*助手[^）)]*[）)]/.test(title),
+      assistantFare: (() => {
+        const match = String(description || "").normalize("NFKC").match(/助手\s*(?:\d+\s*名)?\s*[:\s]*[¥]?\s*([\d,]+)/);
+        return match ? Number(match[1].replace(/,/g, "")) : 0;
+      })(),
+      assistantFareSpecified: /助手\s*(?:\d+\s*名)?\s*[:\s]*[¥]?\s*[\d,]+/.test(String(description || "").normalize("NFKC")),
+      hasAssistant: /助手/.test(description) && !/助手\s*(なし|不要)/.test(description),
     });
   });
 
