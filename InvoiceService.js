@@ -1,12 +1,17 @@
-
 function onOpen() {
-    SpreadsheetApp.getUi()
-      .createMenu("請求書管理")
-      .addItem("選択行の請求書を更新","updateSelectedInvoice")
-      .addItem("個別PDF作成","createSelectedInvoicePdf")
-      .addItem("一括PDF作成","createAllInvoicePdfs")
-      .addToUi();
-  }
+  const ui = SpreadsheetApp.getUi();
+  // 請求書管理メニュー
+  ui.createMenu("請求書管理")
+    .addItem("選択行の請求書を更新","updateSelectedInvoice")
+    .addItem("個別PDF作成","createSelectedInvoicePdf")
+    .addItem("一括PDF作成","createAllInvoicePdfs")
+    .addToUi();
+
+  // 取引先確認メニュー
+  ui.createMenu("取引先確認")
+    .addItem("当日分をチェック","checkTodayClients")
+    .addToUi();
+}
 
   function updateSelectedInvoice() {
     const ui = SpreadsheetApp.getUi();

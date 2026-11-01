@@ -12,14 +12,6 @@ const CLIENT_CHECK_CONFIG = {
     MASTER_START_ROW: 2
   };
   
-  // 既存のonOpenがある場合は統合する
-  function onOpen() {
-    SpreadsheetApp.getUi()
-      .createMenu("取引先確認")
-      .addItem("当日分をチェック", "checkTodayClients")
-      .addToUi();
-  }
-  
 
   function checkTodayClients() {
     const issues = collectTodayClientIssues();
