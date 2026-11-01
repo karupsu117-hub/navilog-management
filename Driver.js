@@ -104,8 +104,7 @@ function isUnloadOnlyEvent(titleText, drNo) {
 
   leftPart = leftPart
     // 「3364から乗換」などの乗換情報を削除
-    .replace(/^\s*\d+\s*から\s*乗換\s*/i, "")
-    .replace(/^\s*\d+\s*\s*乗換\s*/i, "")
+    .replace(/^\s*(?:(?:\d+\s*から\s*)?\d*\s*乗換)\s*/i, "")
     // 【車番】【ドライバー】【翌(月)】などを削除
     .replace(/【[^】]*】/g, "")
     // []内を削除
