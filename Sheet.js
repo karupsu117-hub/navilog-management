@@ -99,8 +99,7 @@ function writeMonthlySheet(
     if (data.hasAssistant && !data.isCharter) {
       const assistantNote = data.assistantFareSpecified
         ? "助手 " + Number(data.assistantFare || 0).toLocaleString("ja-JP") + "円（別途加算）"
-        : "助手代込み";
-
+        : "助手代別途加算（金額未記載）";
       finalPerson = [finalPerson,assistantNote].filter(Boolean).join(" / ");
     }
 
