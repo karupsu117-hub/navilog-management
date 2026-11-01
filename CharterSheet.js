@@ -28,58 +28,65 @@ function syncCharterSheet(runDataList,updateStart,updateEnd,timeZone) {
 
 function writeCharterMonthlySheet(sheet,dataList,targetDateSet) {
   const lastRow = sheet.getLastRow();
-  const targetRows = [];
+  const existingData = [];
 
+  // A～G列の既存データを取得
   if (lastRow >= CHARTER_START_ROW) {
-    const dateValues = sheet.getRange(CHARTER_START_ROW,1,lastRow - CHARTER_START_ROW + 1,1).getValues();
+    const values = sheet.getRange(CHARTER_START_ROW,1,lastRow - CHARTER_START_ROW + 1,7).getValues();
 
-    dateValues.forEach(function(row,index) {
+    values.forEach(function(row) {
       const dateStr = normalizeSheetMonthDay(row[0]);
-      if (dateStr && targetDateSet.has(dateStr)) targetRows.push(CHARTER_START_ROW + index);
+      if (!dateStr) return;
+      if (targetDateSet.has(dateStr)) return;
+      existingData.push(row);
     });
   }
 
-    const newValues = dataList.map(function(data) {
-      const fare = toCharterNumber(data.fareNet);
-      const paid = toCharterNumber(data.charterFare);
+  // 今回取得した傭車データ
+  const newValues = dataList.map(function(data) {
+    const fare = toCharterNumber(data.fareNet);
+    const paid = toCharterNumber(data.charterFare);
 
-      return [
-        data.dateStr_load || "",    // A 日付
-        data.client || "",          // B 取引先
-        data.charterCompany || "",  // C 依頼会社
-        data.departure || "",       // D 積み地
-        data.arrival || "",         // E 卸地
-        fare,                       // F 運賃（税抜）
-        paid,                       // G 渡した金額
-      ];
-    });
+    return [
+      data.dateStr_load || "",    // A 日付
+      data.client || "",          // B 取引先
+      data.charterCompany || "",  // C 依頼会社
+      data.departure || "",       // D 積み地
+      data.arrival || "",         // E 卸地
+      fare,                       // F 運賃（税抜）
+      paid                        // G 渡した金額
+    ];
+  });
 
-  newValues.sort(function(a,b) {
+  // 既存データと新規データを結合
+  const allValues = existingData.concat(newValues);
+
+  // 日付順に並び替え
+  allValues.sort(function(a,b) {
     const dateA = monthDaySortNumber(a[0]);
     const dateB = monthDaySortNumber(b[0]);
     if (dateA !== dateB) return dateA - dateB;
     return String(a[3]).localeCompare(String(b[3]),"ja");
   });
 
-  targetRows.forEach(function(rowNumber) {
-    sheet.getRange(rowNumber,1,1,7).clearContent();
-  });
-
-  if (newValues.length === 0) return;
-
-  if (targetRows.length > 0) {
-    const firstRow = targetRows[0];
-
-    if (newValues.length > targetRows.length) {
-      const addCount = newValues.length - targetRows.length;
-      sheet.insertRowsAfter(targetRows[targetRows.length - 1],addCount);
-    }
-    sheet.getRange(firstRow,1,newValues.length,7).setValues(newValues);
-    return;
+  // 必要な行数を確保
+  const requiredLastRow = CHARTER_START_ROW + allValues.length - 1;
+  if (requiredLastRow > sheet.getMaxRows()) {
+    sheet.insertRowsAfter(sheet.getMaxRows(),requiredLastRow - sheet.getMaxRows());
   }
 
-  const writeRow = Math.max(sheet.getLastRow() + 1,CHARTER_START_ROW);
-  sheet.getRange(writeRow,1,newValues.length,7).setValues(newValues);
+  // A～G列の古いデータをクリア
+  const clearRows = Math.max(lastRow - CHARTER_START_ROW + 1,allValues.length);
+  if (clearRows > 0) {
+    sheet.getRange(CHARTER_START_ROW,1,clearRows,7).clearContent();
+  }
+
+  // 3行目から空白行なしで書き込み
+  if (allValues.length > 0) {
+    sheet.getRange(CHARTER_START_ROW,1,allValues.length,7).setValues(allValues);
+  }
+
+  Logger.log("【傭車売上表】" + sheet.getName() + "：" + allValues.length + "件を日付順に整理しました");
 }
 
 function toCharterNumber(value) {
