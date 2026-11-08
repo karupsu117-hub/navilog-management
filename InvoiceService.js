@@ -8,8 +8,12 @@ function onOpen() {
     .addToUi();
 
   // 取引先確認メニュー
-  ui.createMenu("取引先確認")
-    .addItem("当日分をチェック","checkTodayClients")
+  ui.createMenu("カレンダーチェック")
+    .addItem("取引先当日分チェック","checkTodayClients")
+    .addSeparator()
+    .addItem("積み置き・卸し予定をチェック", "checkOvernightEvents")
+    .addSeparator()
+    .addItem("当日便予定チェック","checkSameDayEvents")
     .addToUi();
 }
 
