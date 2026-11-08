@@ -14,8 +14,6 @@ function onOpen() {
     .addItem("積み置き・卸し予定をチェック", "checkOvernightEvents")
     .addSeparator()
     .addItem("当日便予定チェック","checkSameDayEvents")
-    .addItem("取引先フォルダを一括作成","createClientFolders")
-    .addItem("取引先フォルダの不足を確認","checkClientFolders")
     .addToUi();
     
 }
