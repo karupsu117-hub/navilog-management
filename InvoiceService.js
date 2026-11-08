@@ -14,7 +14,10 @@ function onOpen() {
     .addItem("積み置き・卸し予定をチェック", "checkOvernightEvents")
     .addSeparator()
     .addItem("当日便予定チェック","checkSameDayEvents")
+    .addItem("取引先フォルダを一括作成","createClientFolders")
+    .addItem("取引先フォルダの不足を確認","checkClientFolders")
     .addToUi();
+    
 }
 
   function updateSelectedInvoice() {
@@ -302,30 +305,75 @@ function getInvoiceTransferData(sheet,rowNumber) {
     return firstEmpty;
   }
   
-
-  function transferInvoiceDetail(invoiceSS,data) {
-    let target = findInvoiceDetailRow(invoiceSS,data.caseId);
+  function transferInvoiceDetail(invoiceSS, data) {
+    let target = findInvoiceDetailRow(
+      invoiceSS,
+      data.caseId
+    );
+  
     let createdNewSheet = false;
   
-    // 空き行がない場合、新しいシートを作成
+    // 空き行がない場合は新しいシートを作成
     if (!target) {
       const newSheet = createNextInvoiceSheet(invoiceSS);
-      target = {sheet:newSheet,rowNumber:13,isUpdate:false};
+  
+      target = {
+        sheet: newSheet,
+        rowNumber: 13,
+        isUpdate: false
+      };
+  
       createdNewSheet = true;
     }
   
-    const values = [
+    // 転記元と転記先のタイムゾーン
+    const sourceSS = SpreadsheetApp.getActiveSpreadsheet();
+  
+    const sourceTimeZone = sourceSS.getSpreadsheetTimeZone();
+    const targetTimeZone = invoiceSS.getSpreadsheetTimeZone();
+  
+    // 日付を正しく変換
+    const loadDate = normalizeInvoiceDate(
       data.loadDate,
-      data.departure,
+      sourceTimeZone,
+      targetTimeZone
+    );
+  
+    const unloadDate = normalizeInvoiceDate(
       data.unloadDate,
+      sourceTimeZone,
+      targetTimeZone
+    );
+  
+    const values = [
+      loadDate,
+      data.departure,
+      unloadDate,
       data.arrival,
       data.toll,
       data.parking,
       data.fareNet
     ];
   
-    target.sheet.getRange(target.rowNumber,2,1,7).setValues([values]);
-    target.sheet.getRange(target.rowNumber,27).setValue(data.caseId);
+    // B〜H列に転記
+    target.sheet
+      .getRange(target.rowNumber, 2, 1, 7)
+      .setValues([values]);
+  
+    // B列：積日
+    target.sheet
+      .getRange(target.rowNumber, 2)
+      .setNumberFormat("m/d");
+  
+    // D列：卸日
+    target.sheet
+      .getRange(target.rowNumber, 4)
+      .setNumberFormat("m/d");
+  
+    // AA列：案件ID
+    target.sheet
+      .getRange(target.rowNumber, 27)
+      .setValue(data.caseId);
   
     if (!target.sheet.isColumnHiddenByUser(27)) {
       target.sheet.hideColumns(27);
@@ -337,14 +385,62 @@ function getInvoiceTransferData(sheet,rowNumber) {
   
     SpreadsheetApp.flush();
   
-    Logger.log(
-      "転記完了: シート"+target.sheet.getName()+
-      " / "+target.rowNumber+"行目"+
-      " / "+(target.isUpdate?"更新":"新規")
+    // 転記後の日付を検証
+    const savedLoadDate = target.sheet
+      .getRange(target.rowNumber, 2)
+      .getValue();
+  
+    const savedUnloadDate = target.sheet
+      .getRange(target.rowNumber, 4)
+      .getValue();
+  
+    const expectedLoadDate = Utilities.formatDate(
+      loadDate,
+      targetTimeZone,
+      "yyyy-MM-dd"
     );
   
+    const expectedUnloadDate = Utilities.formatDate(
+      unloadDate,
+      targetTimeZone,
+      "yyyy-MM-dd"
+    );
+  
+    const actualLoadDate = Utilities.formatDate(
+      savedLoadDate,
+      targetTimeZone,
+      "yyyy-MM-dd"
+    );
+  
+    const actualUnloadDate = Utilities.formatDate(
+      savedUnloadDate,
+      targetTimeZone,
+      "yyyy-MM-dd"
+    );
+  
+    if (
+      expectedLoadDate !== actualLoadDate ||
+      expectedUnloadDate !== actualUnloadDate
+    ) {
+      throw new Error(
+        "転記後の日付が一致しません。\n" +
+        "積日：" + expectedLoadDate +
+        " → " + actualLoadDate + "\n" +
+        "卸日：" + expectedUnloadDate +
+        " → " + actualUnloadDate
+      );
+    }
+    Logger.log(
+      "【請求書転記成功】" +
+      " シート：" + target.sheet.getName() +
+      " 行：" + target.rowNumber +
+      " 積日：" + actualLoadDate +
+      " 卸日：" + actualUnloadDate +
+      " 処理：" + (target.isUpdate ? "更新" : "新規")
+    );
     return target;
   }
+  
   
 
   function setInvoiceClientName(invoiceSS,clientName) {
@@ -419,8 +515,75 @@ function updateInvoiceTotalFormula(invoiceSS) {
   
     Logger.log("請求合計式を更新しました。");
   }
-  
 
+/**
+ * 請求書転記用の日付を作成する。
+ *
+ * 転記元のスプレッドシートのタイムゾーンで
+ * 年月日を確定させ、転記先のタイムゾーンで
+ * 正午のDateオブジェクトに変換する。
+ *
+ * 正午にすることで、日付境界付近の
+ * タイムゾーンによる日付ずれを防ぐ。
+ */
+function normalizeInvoiceDate(value, sourceTimeZone, targetTimeZone) {
+  if (value === "" || value === null || value === undefined) {
+    throw new Error("請求書に転記する日付が空欄です。");
+  }
 
+  let dateString = "";
 
-  
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) {
+      throw new Error("無効な日付です。");
+    }
+
+    dateString = Utilities.formatDate(
+      value,
+      sourceTimeZone,
+      "yyyy-MM-dd"
+    );
+  } else {
+    const text = String(value).trim();
+
+    // 2026/11/2、2026-11-02、2026.11.2 に対応
+    const match = text.match(
+      /^(\d{4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})$/
+    );
+
+    if (!match) {
+      throw new Error(
+        "日付の形式が正しくありません: " + text
+      );
+    }
+
+    dateString = [
+      match[1],
+      match[2].padStart(2, "0"),
+      match[3].padStart(2, "0")
+    ].join("-");
+  }
+
+  const result = Utilities.parseDate(
+    dateString + " 12:00:00",
+    targetTimeZone,
+    "yyyy-MM-dd HH:mm:ss"
+  );
+
+  // 実際に転記先のタイムゾーンで
+  // 同じ年月日になっていることを確認
+  const verified = Utilities.formatDate(
+    result,
+    targetTimeZone,
+    "yyyy-MM-dd"
+  );
+
+  if (verified !== dateString) {
+    throw new Error(
+      "日付変換に失敗しました: " +
+      dateString + " → " + verified
+    );
+  }
+
+  return result;
+}
