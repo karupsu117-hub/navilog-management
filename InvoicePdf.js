@@ -11,10 +11,11 @@ const INVOICE_PDF_CONFIG = {
   };
   
   // 選択した取引先だけPDF作成
-  function createSelectedInvoicePdf() {
+  function createSelectedInvoicePdf(context) {
     const ui = SpreadsheetApp.getUi();
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const row = sheet.getActiveRange()?.getRow();
+    const sheet = context ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(context.sheetName) : SpreadsheetApp.getActiveSheet();
+    if (!sheet) throw new Error("対象シートが見つかりません。");
+    const row = context ? context.row : sheet.getActiveRange()?.getRow();
   
     if (!isInvoicePdfMonthlySheet(sheet)) {
       ui.alert("月別管理表を選択してください。");
@@ -45,9 +46,10 @@ const INVOICE_PDF_CONFIG = {
   }
   
   // 開いている月の取引先を一括PDF作成
-  function createAllInvoicePdfs() {
+  function createAllInvoicePdfs(context) {
     const ui = SpreadsheetApp.getUi();
-    const sheet = SpreadsheetApp.getActiveSheet();
+    const sheet = context ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(context.sheetName) : SpreadsheetApp.getActiveSheet();
+    if (!sheet) throw new Error("対象シートが見つかりません。");
   
     if (!isInvoicePdfMonthlySheet(sheet)) {
       ui.alert("月別管理表を選択してください。");

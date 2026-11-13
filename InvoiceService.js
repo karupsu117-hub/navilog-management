@@ -1,31 +1,26 @@
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  // 請求書管理メニュー
+function onOpen(){
+  const ui=SpreadsheetApp.getUi();
   ui.createMenu("請求書管理")
-    .addItem("選択行の請求書を更新","updateSelectedInvoice")
-    .addItem("個別PDF作成","createSelectedInvoicePdf")
-    .addItem("一括PDF作成","createAllInvoicePdfs")
+    .addItem("選択行の請求書を更新","menuUpdateSelectedInvoice")
+    .addItem("個別PDF作成","menuCreateSelectedInvoicePdf")
+    .addItem("一括PDF作成","menuCreateAllInvoicePdfs")
     .addToUi();
-
-  // 取引先確認メニュー
   ui.createMenu("カレンダーチェック")
-    .addItem("取引先当日分チェック","checkTodayClients")
+    .addItem("取引先当日分チェック","menuCheckTodayClients")
     .addSeparator()
-    .addItem("積み置き・卸し予定をチェック", "checkOvernightEvents")
+    .addItem("積み置き・卸し予定をチェック","menuCheckOvernightEvents")
     .addSeparator()
-    .addItem("当日便予定チェック","checkSameDayEvents")
+    .addItem("当日便予定チェック","menuCheckSameDayEvents")
     .addToUi();
-    
 }
 
-  function updateSelectedInvoice() {
+function updateSelectedInvoice(context) {
     const ui = SpreadsheetApp.getUi();
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const range = sheet.getActiveRange();
+    const sheet = context ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(context.sheetName) : SpreadsheetApp.getActiveSheet();
+    if (!sheet) throw new Error("対象シートが見つかりません。");
   
-    if (!range) return;
-  
-    const rowNumber = range.getRow();
+    const range = context ? null : sheet.getActiveRange();
+    const rowNumber = context ? context.row : range?.getRow();
     const yearMonth = sheet.getName();
   
     if (!/^\d{4}\.\d{1,2}$/.test(yearMonth)) {
